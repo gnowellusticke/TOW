@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cmmn:definitions xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
+                  xmlns:dc="http://www.omg.org/spec/CMMN/20151109/DC"
+                  xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/CMMNDI"
+                  xmlns:di="http://www.omg.org/spec/CMMN/20151109/DI"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="definitions-unit-lifecycle"
+                  targetNamespace="http://warhammer.oldworld/cmmn/unit"
+                  exporter="Camunda Modeler"
+                  exporterVersion="5.0.0">
+
+  <cmmn:case id="case-unit-lifecycle" name="Unit Lifecycle Management">
+    <cmmn:casePlanModel id="plan-unit-lifecycle" name="Unit Lifecycle Plan">
+      
+      <!-- ============================================
+           STAGE 1: DEPLOYMENT
+           ============================================ -->
+      <cmmn:stage id="stage-deployment" name="Deployment" autoComplete="true">
+        <cmmn:planItem id="pi-place-unit" definitionRef="task-place-unit">
+          <cmmn:itemControl>
+            <cmmn:manualActivationRule>
+              <cmmn:condition><![CDATA[${false}]]></cmmn:condition>
+            </cmmn:manualActivationRule>
+          </cmmn:itemControl>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-check-deployment-legal" definitionRef="task-check-deployment-legal"/>
+        
+        <cmmn:exitCriterion id="exit-deployed" sentryRef="sentry-unit-deployed">
+          <cmmn:documentation>Unit has been legally placed on battlefield</cmmn:documentation>
+        </cmmn:exitCriterion>
+      </cmmn:stage>
+      
+      <!-- ============================================
+           STAGE 2: ACTIVE
+           ============================================ -->
+      <cmmn:stage id="stage-active" name="Active" autoComplete="false">
+        <cmmn:entryCriterion id="enter-active" sentryRef="sentry-unit-deployed"/>
+        
+        <!-- Discretionary Actions available during active stage -->
+        <cmmn:planningTable id="planning-active-actions">
+          <cmmn:discretionaryItem id="disc-reform" definitionRef="task-reform" authorizedRoleRefs="role-player">
+            <cmmn:itemControl>
+              <cmmn:requiredRule>
+                <cmmn:condition><![CDATA[${!unit.isEngaged && !unit.isFleeing}]]></cmmn:condition>
+              </cmmn:requiredRule>
+            </cmmn:itemControl>
+          </cmmn:discretionaryItem>
+          
+          <cmmn:discretionaryItem id="disc-redress-ranks" definitionRef="task-redress-ranks" authorizedRoleRefs="role-player">
+            <cmmn:itemControl>
+              <cmmn:requiredRule>
+                <cmmn:condition><![CDATA[${!unit.isEngaged && !unit.isFleeing}]]></cmmn:condition>
+              </cmmn:requiredRule>
+            </cmmn:itemControl>
+          </cmmn:discretionaryItem>
+          
+          <cmmn:discretionaryItem id="disc-change-formation" definitionRef="task-change-formation" authorizedRoleRefs="role-player">
+            <cmmn:itemControl>
+              <cmmn:requiredRule>
+                <cmmn:condition><![CDATA[${unit.canChangeFormation}]]></cmmn:condition>
+              </cmmn:requiredRule>
+            </cmmn:itemControl>
+          </cmmn:discretionaryItem>
+        </cmmn:planningTable>
+        
+        <!-- Standard plan items for active units -->
+        <cmmn:planItem id="pi-track-status" definitionRef="task-track-unit-status">
+          <cmmn:itemControl>
+            <cmmn:repetitionRule>
+              <cmmn:condition><![CDATA[${true}]]></cmmn:condition>
+            </cmmn:repetitionRule>
+          </cmmn:itemControl>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-movement-actions" definitionRef="stage-movement-actions"/>
+        <cmmn:planItem id="pi-shooting-actions" definitionRef="stage-shooting-actions"/>
+        <cmmn:planItem id="pi-combat-actions" definitionRef="stage-combat-actions"/>
+        
+        <!-- Milestones -->
+        <cmmn:planItem id="pi-milestone-first-charge" definitionRef="milestone-first-charge"/>
+        <cmmn:planItem id="pi-milestone-engaged" definitionRef="milestone-engaged"/>
+        
+        <!-- Exit criteria -->
+        <cmmn:exitCriterion id="exit-breaks" sentryRef="sentry-unit-breaks">
+          <cmmn:documentation>Unit fails Break test and flees</cmmn:documentation>
+        </cmmn:exitCriterion>
+        
+        <cmmn:exitCriterion id="exit-destroyed-active" sentryRef="sentry-unit-destroyed">
+          <cmmn:documentation>Unit reduced to 0 Wounds or all models removed</cmmn:documentation>
+        </cmmn:exitCriterion>
+      </cmmn:stage>
+      
+      <!-- ============================================
+           STAGE 3: FLEEING
+           ============================================ -->
+      <cmmn:stage id="stage-fleeing" name="Fleeing" autoComplete="false">
+        <cmmn:entryCriterion id="enter-fleeing" sentryRef="sentry-unit-breaks"/>
+        
+        <cmmn:planItem id="pi-flee-move" definitionRef="task-make-flee-move">
+          <cmmn:itemControl>
+            <cmmn:repetitionRule>
+              <cmmn:condition><![CDATA[${phase == 'Compulsory Moves' && !unit.rallied}]]></cmmn:condition>
+            </cmmn:repetitionRule>
+          </cmmn:itemControl>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-check-flee-through" definitionRef="task-check-flee-through-units"/>
+        <cmmn:planItem id="pi-peril-tests" definitionRef="task-make-peril-tests"/>
+        <cmmn:planItem id="pi-cause-panic" definitionRef="task-cause-panic-nearby"/>
+        <cmmn:planItem id="pi-rally-attempt" definitionRef="task-attempt-rally"/>
+        
+        <cmmn:exitCriterion id="exit-rallied" sentryRef="sentry-unit-rallies">
+          <cmmn:documentation>Unit passes Rally test</cmmn:documentation>
+        </cmmn:exitCriterion>
+        
+        <cmmn:exitCriterion id="exit-fled-board" sentryRef="sentry-fled-off-board">
+          <cmmn:documentation>Unit crosses battlefield edge while fleeing</cmmn:documentation>
+        </cmmn:exitCriterion>
+        
+        <cmmn:exitCriterion id="exit-destroyed-fleeing" sentryRef="sentry-unit-destroyed"/>
+      </cmmn:stage>
+      
+      <!-- ============================================
+           STAGE 4: RALLIED
+           ============================================ -->
+      <cmmn:stage id="stage-rallied" name="Rallied" autoComplete="true">
+        <cmmn:entryCriterion id="enter-rallied" sentryRef="sentry-unit-rallies"/>
+        
+        <cmmn:planItem id="pi-free-reform" definitionRef="task-reform">
+          <cmmn:documentation>Free reform allowed upon rallying (page 117)</cmmn:documentation>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-set-restrictions" definitionRef="task-set-rally-restrictions">
+          <cmmn:documentation>Cannot charge this turn, counts as moved for shooting (page 117)</cmmn:documentation>
+        </cmmn:planItem>
+        
+        <cmmn:exitCriterion id="exit-rally-complete" sentryRef="sentry-rally-complete">
+          <cmmn:documentation>Reform complete, unit returns to Active stage</cmmn:documentation>
+        </cmmn:exitCriterion>
+      </cmmn:stage>
+      
+      <!-- ============================================
+           STAGE 5: DESTROYED
+           ============================================ -->
+      <cmmn:stage id="stage-destroyed" name="Destroyed" autoComplete="true">
+        <cmmn:entryCriterion id="enter-destroyed-1" sentryRef="sentry-unit-destroyed"/>
+        <cmmn:entryCriterion id="enter-destroyed-2" sentryRef="sentry-fled-off-board"/>
+        <cmmn:entryCriterion id="enter-destroyed-3" sentryRef="sentry-run-down"/>
+        
+        <cmmn:planItem id="pi-award-vp" definitionRef="task-award-victory-points">
+          <cmmn:documentation>Award VP based on points cost and casualties (page 286)</cmmn:documentation>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-capture-standard" definitionRef="task-capture-standard">
+          <cmmn:itemControl>
+            <cmmn:requiredRule>
+              <cmmn:condition><![CDATA[${unit.hasStandard && unit.destroyedInCombat}]]></cmmn:condition>
+            </cmmn:requiredRule>
+          </cmmn:itemControl>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-trigger-panic-tests" definitionRef="task-trigger-panic-destroyed">
+          <cmmn:documentation>Nearby units with US 5+ test for panic (page 161)</cmmn:documentation>
+        </cmmn:planItem>
+        
+        <cmmn:planItem id="pi-milestone-destroyed" definitionRef="milestone-destroyed"/>
+      </cmmn:stage>
+      
+      <!-- ============================================
+           NESTED STAGES
+           ============================================ -->
+      <cmmn:stage id="stage-movement-actions" name="Movement Actions">
+        <cmmn:planItem id="pi-declare-charge" definitionRef="task-declare-charge"/>
+        <cmmn:planItem id="pi-make-charge-move" definitionRef="task-make-charge-move"/>
+        <cmmn:planItem id="pi-make-normal-move" definitionRef="task-make-normal-move"/>
+        <cmmn:planItem id="pi-march" definitionRef="task-march"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-shooting-actions" name="Shooting Actions">
+        <cmmn:planItem id="pi-select-shooting-target" definitionRef="task-select-shooting-target"/>
+        <cmmn:planItem id="pi-roll-to-hit-shooting" definitionRef="task-roll-to-hit-shooting"/>
+        <cmmn:planItem id="pi-stand-and-shoot" definitionRef="task-stand-and-shoot"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-combat-actions" name="Combat Actions">
+        <cmmn:planItem id="pi-engage-combat" definitionRef="task-engage-combat"/>
+        <cmmn:planItem id="pi-resolve-attacks" definitionRef="task-resolve-attacks"/>
+        <cmmn:planItem id="pi-make-break-test" definitionRef="task-make-break-test"/>
+      </cmmn:stage>
+      
+      <!-- ============================================
+           SENTRIES (Entry/Exit Conditions)
+           ============================================ -->
+      <cmmn:sentry id="sentry-unit-deployed">
+        <cmmn:planItemOnPart id="part-place-complete" sourceRef="pi-place-unit">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+        <cmmn:ifPart>
+          <cmmn:condition><![CDATA[${unit.legallyPlaced == true}]]></cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-breaks">
+        <cmmn:ifPart>
+          <cmmn:condition><![CDATA[${unit.breakTestResult == 'Breaks' || unit.panicTestResult == 'Flees'}]]></cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-destroyed">
+        <cmmn:ifPart>
+          <cmmn:condition><![CDATA[${unit.currentWounds <= 0 || unit.remainingModels == 0}]]></cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-rallies">
+        <cmmn:ifPart>
+          <cmmn:condition><![CDATA[${unit.rallyTestPassed == true}]]></cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-fled-off-board">
+        <cmmn:ifPart>
+          <cmmn:condition><![CDATA[${unit.crossedBoardEdge == true && unit.status == 'Fleeing'}]]></cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-run-down">
+        <cmmn:ifPart>
+          <cmmn:condition><![CDATA[${unit.runDown == true}]]></cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-rally-complete">
+        <cmmn:planItemOnPart id="part-reform-complete" sourceRef="pi-free-reform">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <!-- ============================================
+           MILESTONES
+           ============================================ -->
+      <cmmn:milestone id="milestone-deployed" name="Unit Deployed">
+        <cmmn:entryCriterion sentryRef="sentry-unit-deployed"/>
+      </cmmn:milestone>
+      
+      <cmmn:milestone id="milestone-first-charge" name="First Charge Made">
+        <cmmn:documentation>Unit has made its first charge of the game (relevant for First Charge special rule)</cmmn:documentation>
+      </cmmn:milestone>
+      
+      <cmmn:milestone id="milestone-engaged" name="Engaged in Combat">
+        <cmmn:documentation>Unit is engaged in combat with enemy</cmmn:documentation>
+      </cmmn:milestone>
+      
+      <cmmn:milestone id="milestone-destroyed" name="Unit Destroyed">
+        <cmmn:documentation>Unit has been removed from play</cmmn:documentation>
+      </cmmn:milestone>
+      
+      <!-- ============================================
+           TASK DEFINITIONS
+           ============================================ -->
+      <cmmn:humanTask id="task-place-unit" name="Place Unit on Battlefield">
+        <cmmn:documentation>Player places unit within deployment zone (page 285)</cmmn:documentation>
+      </cmmn:humanTask>
+      
+      <cmmn:task id="task-check-deployment-legal" name="Check Deployment Legality">
+        <cmmn:documentation>Validate: within deployment zone, not within 1" of another unit</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:humanTask id="task-reform" name="Reform Unit">
+        <cmmn:documentation>Unit pivots and redresses ranks (page 125)</cmmn:documentation>
+      </cmmn:humanTask>
+      
+      <cmmn:humanTask id="task-redress-ranks" name="Redress Ranks">
+        <cmmn:documentation>Add/remove up to 5 models from front rank (page 125)</cmmn:documentation>
+      </cmmn:humanTask>
+      
+      <cmmn:humanTask id="task-change-formation" name="Change Formation">
+        <cmmn:documentation>Switch between Close Order, Open Order, Skirmish (page 125)</cmmn:documentation>
+      </cmmn:humanTask>
+      
+      <cmmn:task id="task-track-unit-status" name="Track Unit Status" isBlocking="false">
+        <cmmn:documentation>Continuous monitoring of unit state</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-declare-charge" name="Declare Charge">
+        <cmmn:documentation>Declare charge target during Declare Charges sub-phase (page 118)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-make-charge-move" name="Make Charge Move">
+        <cmmn:documentation>Execute charge movement with alignment (page 126)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-make-normal-move" name="Make Normal Move">
+        <cmmn:documentation>Move up to Movement characteristic (page 123)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-march" name="March">
+        <cmmn:documentation>Move up to 2x Movement characteristic (page 123)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-select-shooting-target" name="Select Shooting Target">
+        <cmmn:documentation>Choose enemy unit to shoot at (page 137)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-roll-to-hit-shooting" name="Roll To Hit (Shooting)">
+        <cmmn:documentation>Use BS to hit enemy (page 138)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-stand-and-shoot" name="Stand & Shoot">
+        <cmmn:documentation>Shoot as charge reaction (page 120)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-engage-combat" name="Engage in Combat">
+        <cmmn:documentation>Unit enters combat with enemy</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-resolve-attacks" name="Resolve Attacks">
+        <cmmn:documentation>Roll To Hit, To Wound, Saves (pages 148-150)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-make-break-test" name="Make Break Test">
+        <cmmn:documentation>Test after losing combat (page 154)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-make-flee-move" name="Make Flee Move">
+        <cmmn:documentation>Roll 2D6 and flee that distance (page 132)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-check-flee-through-units" name="Check Flee Through Units">
+        <cmmn:documentation>Determine if fleeing through friendly/enemy units</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-make-peril-tests" name="Make Peril Tests">
+        <cmmn:documentation>Roll D6 for each model fleeing through enemy (page 133)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-cause-panic-nearby" name="Cause Panic in Nearby Units">
+        <cmmn:documentation>Trigger panic tests in friendly units within 6" (page 161)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-attempt-rally" name="Attempt to Rally">
+        <cmmn:documentation>Make Rally test during Rally sub-phase (page 117)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-set-rally-restrictions" name="Set Rally Restrictions">
+        <cmmn:documentation>Cannot charge, counts as moved (page 117)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-award-victory-points" name="Award Victory Points">
+        <cmmn:documentation>Calculate VP based on casualties and unit cost (page 286)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-capture-standard" name="Capture Enemy Standard">
+        <cmmn:documentation>Award standard as trophy if unit destroyed in combat (page 200)</cmmn:documentation>
+      </cmmn:task>
+      
+      <cmmn:task id="task-trigger-panic-destroyed" name="Trigger Panic Tests (Destroyed)">
+        <cmmn:documentation>Units within 6" with US 5+ test panic (page 161)</cmmn:documentation>
+      </cmmn:task>
+      
+      <!-- ============================================
+           ROLES
+           ============================================ -->
+      <cmmn:role id="role-player" name="Player"/>
+      <cmmn:role id="role-game-engine" name="Game Engine"/>
+      
+    </cmmn:casePlanModel>
+  </cmmn:case>
+
+</cmmn:definitions>

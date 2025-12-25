@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" 
+             id="definitions-to-wound" 
+             name="Warhammer: To Wound"
+             namespace="http://warhammer.oldworld/dmn/combat">
+
+  <decision id="decision-to-wound" name="To Wound">
+    <decisionTable id="table-to-wound" hitPolicy="UNIQUE">
+      <input id="input1" label="Weapon Strength">
+        <inputExpression typeRef="integer">
+          <text>weaponStrength</text>
+        </inputExpression>
+      </input>
+      
+      <input id="input2" label="Target Toughness">
+        <inputExpression typeRef="integer">
+          <text>targetToughness</text>
+        </inputExpression>
+      </input>
+      
+      <output id="output1" label="Wound Target" name="woundTarget" typeRef="string"/>
+      <annotation name="annotation1"/>
+      
+      <!-- S1 -->
+      <rule id="s1t1"><inputEntry><text>1</text></inputEntry><inputEntry><text>1</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s1t2"><inputEntry><text>1</text></inputEntry><inputEntry><text>2</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s1t3"><inputEntry><text>1</text></inputEntry><inputEntry><text>[3..6]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s1t7"><inputEntry><text>1</text></inputEntry><inputEntry><text>[7..10]</text></inputEntry><outputEntry><text>"Cannot Wound"</text></outputEntry><annotationEntry><text>Page 140 - S6+ less than T</text></annotationEntry></rule>
+      
+      <!-- S2 -->
+      <rule id="s2t1"><inputEntry><text>2</text></inputEntry><inputEntry><text>1</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s2t2"><inputEntry><text>2</text></inputEntry><inputEntry><text>2</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s2t3"><inputEntry><text>2</text></inputEntry><inputEntry><text>3</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s2t4"><inputEntry><text>2</text></inputEntry><inputEntry><text>[4..7]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s2t8"><inputEntry><text>2</text></inputEntry><inputEntry><text>[8..10]</text></inputEntry><outputEntry><text>"Cannot Wound"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S3 -->
+      <rule id="s3t1"><inputEntry><text>3</text></inputEntry><inputEntry><text>[1..2]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s3t3"><inputEntry><text>3</text></inputEntry><inputEntry><text>3</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s3t4"><inputEntry><text>3</text></inputEntry><inputEntry><text>4</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s3t5"><inputEntry><text>3</text></inputEntry><inputEntry><text>[5..8]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s3t9"><inputEntry><text>3</text></inputEntry><inputEntry><text>[9..10]</text></inputEntry><outputEntry><text>"Cannot Wound"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S4 -->
+      <rule id="s4t1"><inputEntry><text>4</text></inputEntry><inputEntry><text>[1..2]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s4t3"><inputEntry><text>4</text></inputEntry><inputEntry><text>3</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s4t4"><inputEntry><text>4</text></inputEntry><inputEntry><text>4</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s4t5"><inputEntry><text>4</text></inputEntry><inputEntry><text>5</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s4t6"><inputEntry><text>4</text></inputEntry><inputEntry><text>[6..9]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s4t10"><inputEntry><text>4</text></inputEntry><inputEntry><text>10</text></inputEntry><outputEntry><text>"Cannot Wound"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S5 -->
+      <rule id="s5t1"><inputEntry><text>5</text></inputEntry><inputEntry><text>[1..3]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s5t4"><inputEntry><text>5</text></inputEntry><inputEntry><text>4</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s5t5"><inputEntry><text>5</text></inputEntry><inputEntry><text>5</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s5t6"><inputEntry><text>5</text></inputEntry><inputEntry><text>6</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s5t7"><inputEntry><text>5</text></inputEntry><inputEntry><text>[7..10]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S6 -->
+      <rule id="s6t1"><inputEntry><text>6</text></inputEntry><inputEntry><text>[1..3]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s6t4"><inputEntry><text>6</text></inputEntry><inputEntry><text>[4..5]</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s6t6"><inputEntry><text>6</text></inputEntry><inputEntry><text>6</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s6t7"><inputEntry><text>6</text></inputEntry><inputEntry><text>7</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s6t8"><inputEntry><text>6</text></inputEntry><inputEntry><text>[8..10]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S7 -->
+      <rule id="s7t1"><inputEntry><text>7</text></inputEntry><inputEntry><text>[1..4]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s7t5"><inputEntry><text>7</text></inputEntry><inputEntry><text>[5..6]</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s7t7"><inputEntry><text>7</text></inputEntry><inputEntry><text>7</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s7t8"><inputEntry><text>7</text></inputEntry><inputEntry><text>8</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s7t9"><inputEntry><text>7</text></inputEntry><inputEntry><text>[9..10]</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S8 -->
+      <rule id="s8t1"><inputEntry><text>8</text></inputEntry><inputEntry><text>[1..4]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s8t5"><inputEntry><text>8</text></inputEntry><inputEntry><text>[5..6]</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s8t7"><inputEntry><text>8</text></inputEntry><inputEntry><text>[7..8]</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s8t9"><inputEntry><text>8</text></inputEntry><inputEntry><text>9</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s8t10"><inputEntry><text>8</text></inputEntry><inputEntry><text>10</text></inputEntry><outputEntry><text>"6+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S9 -->
+      <rule id="s9t1"><inputEntry><text>9</text></inputEntry><inputEntry><text>[1..5]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s9t6"><inputEntry><text>9</text></inputEntry><inputEntry><text>[6..7]</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s9t8"><inputEntry><text>9</text></inputEntry><inputEntry><text>[8..9]</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s9t10"><inputEntry><text>9</text></inputEntry><inputEntry><text>10</text></inputEntry><outputEntry><text>"5+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+      <!-- S10 -->
+      <rule id="s10t1"><inputEntry><text>10</text></inputEntry><inputEntry><text>[1..5]</text></inputEntry><outputEntry><text>"2+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s10t6"><inputEntry><text>10</text></inputEntry><inputEntry><text>[6..7]</text></inputEntry><outputEntry><text>"3+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s10t8"><inputEntry><text>10</text></inputEntry><inputEntry><text>[8..9]</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      <rule id="s10t10"><inputEntry><text>10</text></inputEntry><inputEntry><text>10</text></inputEntry><outputEntry><text>"4+"</text></outputEntry><annotationEntry><text>Page 140</text></annotationEntry></rule>
+      
+    </decisionTable>
+  </decision>
+
+</definitions>

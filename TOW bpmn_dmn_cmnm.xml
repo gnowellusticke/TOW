@@ -1,0 +1,1345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+WARHAMMER: THE OLD WORLD - CMMN CASE MODELS & AI AGENT INTERFACE
+Version 1.5.1 Compliant
+-->
+
+<!-- ================================================================
+     SECTION 4: CMMN CASE MODELS
+     ================================================================ -->
+
+<cmmn:definitions xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
+                  xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/CMMNDI"
+                  id="warhammer-cases"
+                  targetNamespace="http://warhammer.oldworld/cases">
+
+  <!-- UNIT LIFECYCLE CASE -->
+  <cmmn:case id="case-unit-lifecycle" name="Unit Lifecycle Management">
+    
+    <cmmn:casePlanModel id="plan-unit-lifecycle" name="Unit Lifecycle">
+      
+      <!-- Stages -->
+      <cmmn:stage id="stage-deployment" name="Deployment">
+        <cmmn:planItem id="item-place-unit" definitionRef="task-place-unit"/>
+        <cmmn:exitCriterion id="exit-deployed" sentryRef="sentry-unit-deployed"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-active" name="Active">
+        <cmmn:entryCriterion id="enter-active" sentryRef="sentry-unit-deployed"/>
+        
+        <!-- Discretionary tasks available during active stage -->
+        <cmmn:discretionaryItem id="disc-reform" definitionRef="task-reform" authorizedRoleRefs="role-player"/>
+        <cmmn:discretionaryItem id="disc-redress-ranks" definitionRef="task-redress-ranks" authorizedRoleRefs="role-player"/>
+        <cmmn:discretionaryItem id="disc-change-formation" definitionRef="task-change-formation" authorizedRoleRefs="role-player"/>
+        
+        <!-- Plan items -->
+        <cmmn:planItem id="item-move" definitionRef="task-move"/>
+        <cmmn:planItem id="item-shoot" definitionRef="task-shoot"/>
+        <cmmn:planItem id="item-charge" definitionRef="task-charge"/>
+        <cmmn:planItem id="item-fight" definitionRef="task-fight-combat"/>
+        
+        <cmmn:exitCriterion id="exit-broken" sentryRef="sentry-unit-breaks"/>
+        <cmmn:exitCriterion id="exit-destroyed" sentryRef="sentry-unit-destroyed"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-fleeing" name="Fleeing">
+        <cmmn:entryCriterion id="enter-fleeing" sentryRef="sentry-unit-breaks"/>
+        
+        <cmmn:planItem id="item-flee-move" definitionRef="task-flee-move"/>
+        <cmmn:planItem id="item-panic-nearby" definitionRef="task-cause-panic"/>
+        
+        <cmmn:exitCriterion id="exit-rallied" sentryRef="sentry-unit-rallies"/>
+        <cmmn:exitCriterion id="exit-fled-board" sentryRef="sentry-fled-off-board"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-rallied" name="Rallied">
+        <cmmn:entryCriterion id="enter-rallied" sentryRef="sentry-unit-rallies"/>
+        <cmmn:planItem id="item-reform-after-rally" definitionRef="task-reform"/>
+        <cmmn:exitCriterion id="exit-return-active" sentryRef="sentry-rally-complete"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-destroyed" name="Destroyed">
+        <cmmn:entryCriterion id="enter-destroyed" sentryRef="sentry-unit-destroyed"/>
+        <cmmn:planItem id="item-award-vp" definitionRef="task-award-victory-points"/>
+        <cmmn:planItem id="item-capture-standard" definitionRef="task-capture-standard"/>
+      </cmmn:stage>
+      
+      <!-- Sentries -->
+      <cmmn:sentry id="sentry-unit-deployed">
+        <cmmn:planItemOnPart id="part-deployed" sourceRef="item-place-unit">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-breaks">
+        <cmmn:ifPart id="part-breaks">
+          <cmmn:condition>breakTestFailed</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-destroyed">
+        <cmmn:ifPart id="part-destroyed">
+          <cmmn:condition>currentWounds &lt;= 0 OR allModelsRemoved</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-rallies">
+        <cmmn:ifPart id="part-rallies">
+          <cmmn:condition>rallyTestPassed</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-fled-off-board">
+        <cmmn:ifPart id="part-fled-board">
+          <cmmn:condition>unitCrossedBoardEdge</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-rally-complete">
+        <cmmn:planItemOnPart id="part-reform-done" sourceRef="item-reform-after-rally">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <!-- Milestones -->
+      <cmmn:milestone id="milestone-deployed" name="Unit Deployed"/>
+      <cmmn:milestone id="milestone-first-charge" name="First Charge"/>
+      <cmmn:milestone id="milestone-engaged" name="Engaged in Combat"/>
+      <cmmn:milestone id="milestone-broken" name="Broken"/>
+      <cmmn:milestone id="milestone-rallied" name="Rallied"/>
+      <cmmn:milestone id="milestone-destroyed" name="Destroyed"/>
+      
+    </cmmn:casePlanModel>
+    
+    <!-- Task Definitions -->
+    <cmmn:task id="task-place-unit" name="Place Unit on Battlefield"/>
+    <cmmn:task id="task-reform" name="Reform Unit"/>
+    <cmmn:task id="task-redress-ranks" name="Redress Ranks"/>
+    <cmmn:task id="task-change-formation" name="Change Formation"/>
+    <cmmn:task id="task-move" name="Move Unit"/>
+    <cmmn:task id="task-shoot" name="Shoot"/>
+    <cmmn:task id="task-charge" name="Declare and Execute Charge"/>
+    <cmmn:task id="task-fight-combat" name="Fight in Combat"/>
+    <cmmn:task id="task-flee-move" name="Make Flee Move"/>
+    <cmmn:task id="task-cause-panic" name="Cause Panic in Nearby Units"/>
+    <cmmn:task id="task-award-victory-points" name="Award Victory Points"/>
+    <cmmn:task id="task-capture-standard" name="Capture Enemy Standard"/>
+    
+    <!-- Roles -->
+    <cmmn:role id="role-player" name="Player"/>
+    
+  </cmmn:case>
+
+  <!-- CHARACTER MANAGEMENT CASE -->
+  <cmmn:case id="case-character-management" name="Character Management">
+    
+    <cmmn:casePlanModel id="plan-character" name="Character Lifecycle">
+      
+      <cmmn:stage id="stage-independent" name="Independent">
+        <cmmn:discretionaryItem id="disc-join-unit" definitionRef="task-join-unit"/>
+        <cmmn:discretionaryItem id="disc-cast-spell" definitionRef="task-cast-spell"/>
+        <cmmn:discretionaryItem id="disc-use-magic-item" definitionRef="task-use-magic-item"/>
+        
+        <cmmn:exitCriterion id="exit-joined" sentryRef="sentry-joins-unit"/>
+        <cmmn:exitCriterion id="exit-char-destroyed" sentryRef="sentry-character-slain"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-joined" name="Joined to Unit">
+        <cmmn:entryCriterion id="enter-joined" sentryRef="sentry-joins-unit"/>
+        
+        <cmmn:discretionaryItem id="disc-leave-unit" definitionRef="task-leave-unit"/>
+        <cmmn:discretionaryItem id="disc-issue-challenge" definitionRef="task-issue-challenge"/>
+        <cmmn:discretionaryItem id="disc-accept-challenge" definitionRef="task-accept-challenge"/>
+        <cmmn:discretionaryItem id="disc-refuse-challenge" definitionRef="task-refuse-challenge"/>
+        
+        <cmmn:planItem id="item-move-with-unit" definitionRef="task-move-with-unit"/>
+        <cmmn:planItem id="item-fight-with-unit" definitionRef="task-fight-with-unit"/>
+        
+        <cmmn:exitCriterion id="exit-leaves" sentryRef="sentry-leaves-unit"/>
+        <cmmn:exitCriterion id="exit-in-challenge" sentryRef="sentry-enters-challenge"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-challenge" name="In Challenge">
+        <cmmn:entryCriterion id="enter-challenge" sentryRef="sentry-enters-challenge"/>
+        
+        <cmmn:planItem id="item-duel" definitionRef="task-fight-duel"/>
+        <cmmn:planItem id="item-calculate-overkill" definitionRef="task-calculate-overkill"/>
+        
+        <cmmn:exitCriterion id="exit-challenge" sentryRef="sentry-challenge-ends"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-retired" name="Retired from Combat">
+        <cmmn:entryCriterion id="enter-retired" sentryRef="sentry-retires"/>
+        <cmmn:exitCriterion id="exit-combat-ends" sentryRef="sentry-combat-ends"/>
+      </cmmn:stage>
+      
+      <!-- Sentries -->
+      <cmmn:sentry id="sentry-joins-unit">
+        <cmmn:planItemOnPart sourceRef="disc-join-unit">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-leaves-unit">
+        <cmmn:planItemOnPart sourceRef="disc-leave-unit">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-enters-challenge">
+        <cmmn:ifPart>
+          <cmmn:condition>challengeIssued AND (challengeAccepted OR cannotRefuse)</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-challenge-ends">
+        <cmmn:ifPart>
+          <cmmn:condition>participantSlain OR combatEnds</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-retires">
+        <cmmn:planItemOnPart sourceRef="disc-refuse-challenge">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-combat-ends">
+        <cmmn:ifPart>
+          <cmmn:condition>unitNotEngaged</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-character-slain">
+        <cmmn:ifPart>
+          <cmmn:condition>currentWounds &lt;= 0</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <!-- Planning Tables for Magic Item Usage -->
+      <cmmn:planningTable id="planning-magic-items" authorizedRoleRefs="role-player">
+        <cmmn:discretionaryItem id="disc-item-1" definitionRef="task-use-magic-item">
+          <cmmn:itemControl id="control-item-1">
+            <cmmn:requiredRule id="rule-phase">
+              <cmmn:condition>currentPhase == itemUsagePhase</cmmn:condition>
+            </cmmn:requiredRule>
+            <cmmn:repetitionRule id="rule-once">
+              <cmmn:condition>!itemUsedThisTurn</cmmn:condition>
+            </cmmn:repetitionRule>
+          </cmmn:itemControl>
+        </cmmn:discretionaryItem>
+      </cmmn:planningTable>
+      
+    </cmmn:casePlanModel>
+    
+    <cmmn:task id="task-join-unit" name="Join Unit"/>
+    <cmmn:task id="task-leave-unit" name="Leave Unit"/>
+    <cmmn:task id="task-cast-spell" name="Cast Spell"/>
+    <cmmn:task id="task-use-magic-item" name="Use Magic Item"/>
+    <cmmn:task id="task-issue-challenge" name="Issue Challenge"/>
+    <cmmn:task id="task-accept-challenge" name="Accept Challenge"/>
+    <cmmn:task id="task-refuse-challenge" name="Refuse Challenge"/>
+    <cmmn:task id="task-move-with-unit" name="Move With Unit"/>
+    <cmmn:task id="task-fight-with-unit" name="Fight With Unit"/>
+    <cmmn:task id="task-fight-duel" name="Fight Duel"/>
+    <cmmn:task id="task-calculate-overkill" name="Calculate Overkill"/>
+    
+  </cmmn:case>
+
+  <!-- COMBAT ENGAGEMENT CASE -->
+  <cmmn:case id="case-combat-engagement" name="Combat Engagement">
+    
+    <cmmn:casePlanModel id="plan-combat" name="Combat Management">
+      
+      <cmmn:stage id="stage-charge-declared" name="Charge Declared">
+        <cmmn:planItem id="item-declare-charges" definitionRef="task-declare-charges"/>
+        <cmmn:planItem id="item-declare-reactions" definitionRef="task-declare-reactions"/>
+        <cmmn:exitCriterion id="exit-charges-declared" sentryRef="sentry-charges-declared"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-contact-made" name="Contact Made">
+        <cmmn:entryCriterion id="enter-contact" sentryRef="sentry-charges-declared"/>
+        <cmmn:planItem id="item-resolve-charges" definitionRef="task-resolve-charges"/>
+        <cmmn:planItem id="item-align-units" definitionRef="task-align-units"/>
+        <cmmn:exitCriterion id="exit-aligned" sentryRef="sentry-units-aligned"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-fighting" name="Fighting">
+        <cmmn:entryCriterion id="enter-fighting" sentryRef="sentry-units-aligned"/>
+        
+        <cmmn:discretionaryItem id="disc-issue-challenge" definitionRef="task-issue-challenge-combat"/>
+        
+        <cmmn:planItem id="item-resolve-impact-hits" definitionRef="task-resolve-impact-hits"/>
+        <cmmn:planItem id="item-roll-to-hit" definitionRef="task-roll-to-hit"/>
+        <cmmn:planItem id="item-roll-to-wound" definitionRef="task-roll-to-wound"/>
+        <cmmn:planItem id="item-make-saves" definitionRef="task-make-saves"/>
+        <cmmn:planItem id="item-remove-casualties" definitionRef="task-remove-casualties"/>
+        <cmmn:planItem id="item-stomp-attacks" definitionRef="task-resolve-stomp-attacks"/>
+        
+        <cmmn:exitCriterion id="exit-all-attacked" sentryRef="sentry-all-models-attacked"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-resolution" name="Resolution">
+        <cmmn:entryCriterion id="enter-resolution" sentryRef="sentry-all-models-attacked"/>
+        
+        <cmmn:planItem id="item-calc-result" definitionRef="task-calculate-combat-result"/>
+        <cmmn:planItem id="item-break-tests" definitionRef="task-make-break-tests"/>
+        
+        <cmmn:exitCriterion id="exit-winner-determined" sentryRef="sentry-winner-determined"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-pursuit" name="Pursuit/Follow Up">
+        <cmmn:entryCriterion id="enter-pursuit" sentryRef="sentry-winner-determined"/>
+        
+        <cmmn:discretionaryItem id="disc-restraint-test" definitionRef="task-restraint-test"/>
+        
+        <cmmn:planItem id="item-pursue" definitionRef="task-pursue"/>
+        <cmmn:planItem id="item-follow-up" definitionRef="task-follow-up"/>
+        <cmmn:planItem id="item-restrain" definitionRef="task-restrain-reform"/>
+        
+        <cmmn:exitCriterion id="exit-pursuit-complete" sentryRef="sentry-pursuit-complete"/>
+      </cmmn:stage>
+      
+      <!-- Milestones -->
+      <cmmn:milestone id="milestone-all-attacked" name="All Models Attacked">
+        <cmmn:entryCriterion sentryRef="sentry-all-models-attacked"/>
+      </cmmn:milestone>
+      
+      <cmmn:milestone id="milestone-winner-determined" name="Winner Determined">
+        <cmmn:entryCriterion sentryRef="sentry-winner-determined"/>
+      </cmmn:milestone>
+      
+      <cmmn:milestone id="milestone-combat-complete" name="Combat Complete">
+        <cmmn:entryCriterion sentryRef="sentry-pursuit-complete"/>
+      </cmmn:milestone>
+      
+      <!-- Sentries -->
+      <cmmn:sentry id="sentry-charges-declared">
+        <cmmn:planItemOnPart sourceRef="item-declare-reactions">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-units-aligned">
+        <cmmn:planItemOnPart sourceRef="item-align-units">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-all-models-attacked">
+        <cmmn:ifPart>
+          <cmmn:condition>allModelsWithInitiativeHaveAttacked</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-winner-determined">
+        <cmmn:planItemOnPart sourceRef="item-break-tests">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-pursuit-complete">
+        <cmmn:ifPart>
+          <cmmn:condition>pursuitOrFollowUpComplete OR restrainedAndReformed</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-breaks">
+        <cmmn:ifPart>
+          <cmmn:condition>breakTestResult == "Breaks"</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-unit-destroyed">
+        <cmmn:ifPart>
+          <cmmn:condition>allModelsRemoved</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <!-- Event Listeners -->
+      <cmmn:eventListener id="event-challenge-issued" name="Challenge Issued">
+        <cmmn:standardEvent>occur</cmmn:standardEvent>
+      </cmmn:eventListener>
+      
+      <cmmn:eventListener id="event-unit-breaks" name="Unit Breaks">
+        <cmmn:standardEvent>occur</cmmn:standardEvent>
+        <cmmn:sentry sentryRef="sentry-unit-breaks"/>
+      </cmmn:eventListener>
+      
+      <cmmn:eventListener id="event-unit-destroyed" name="Unit Destroyed">
+        <cmmn:standardEvent>occur</cmmn:standardEvent>
+        <cmmn:sentry sentryRef="sentry-unit-destroyed"/>
+      </cmmn:eventListener>
+      
+    </cmmn:casePlanModel>
+    
+    <cmmn:task id="task-declare-charges" name="Declare Charges"/>
+    <cmmn:task id="task-declare-reactions" name="Declare Charge Reactions"/>
+    <cmmn:task id="task-resolve-charges" name="Resolve Charge Moves"/>
+    <cmmn:task id="task-align-units" name="Align Units"/>
+    <cmmn:task id="task-issue-challenge-combat" name="Issue Challenge"/>
+    <cmmn:task id="task-resolve-impact-hits" name="Resolve Impact Hits"/>
+    <cmmn:task id="task-roll-to-hit" name="Roll To Hit"/>
+    <cmmn:task id="task-roll-to-wound" name="Roll To Wound"/>
+    <cmmn:task id="task-make-saves" name="Make Armour Saves"/>
+    <cmmn:task id="task-remove-casualties" name="Remove Casualties"/>
+    <cmmn:task id="task-resolve-stomp-attacks" name="Resolve Stomp Attacks"/>
+    <cmmn:task id="task-calculate-combat-result" name="Calculate Combat Result"/>
+    <cmmn:task id="task-make-break-tests" name="Make Break Tests"/>
+    <cmmn:task id="task-restraint-test" name="Make Restraint Test"/>
+    <cmmn:task id="task-pursue" name="Pursue"/>
+    <cmmn:task id="task-follow-up" name="Follow Up"/>
+    <cmmn:task id="task-restrain-reform" name="Restrain and Reform"/>
+    
+  </cmmn:case>
+
+  <!-- SPELL CASTING CASE -->
+  <cmmn:case id="case-spell-casting" name="Spell Casting">
+    
+    <cmmn:casePlanModel id="plan-spell-casting" name="Spell Casting Process">
+      
+      <cmmn:stage id="stage-spell-selection" name="Spell Selection">
+        <cmmn:planItem id="item-select-spell" definitionRef="task-select-spell"/>
+        <cmmn:planItem id="item-validate-target" definitionRef="task-validate-target"/>
+        <cmmn:exitCriterion sentryRef="sentry-spell-selected"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-casting" name="Casting">
+        <cmmn:entryCriterion sentryRef="sentry-spell-selected"/>
+        <cmmn:planItem id="item-make-casting-roll" definitionRef="task-make-casting-roll"/>
+        <cmmn:planItem id="item-check-miscast" definitionRef="task-check-miscast"/>
+        <cmmn:exitCriterion sentryRef="sentry-cast-result"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-dispel-attempt" name="Dispel Attempt">
+        <cmmn:entryCriterion sentryRef="sentry-successful-cast"/>
+        <cmmn:discretionaryItem id="disc-wizardly-dispel" definitionRef="task-wizardly-dispel"/>
+        <cmmn:discretionaryItem id="disc-fated-dispel" definitionRef="task-fated-dispel"/>
+        <cmmn:exitCriterion sentryRef="sentry-dispel-complete"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-effect-resolution" name="Effect Resolution">
+        <cmmn:entryCriterion sentryRef="sentry-spell-not-dispelled"/>
+        <cmmn:planItem id="item-resolve-effect" definitionRef="task-resolve-spell-effect"/>
+        <cmmn:exitCriterion sentryRef="sentry-effect-resolved"/>
+      </cmmn:stage>
+      
+      <cmmn:stage id="stage-remains-in-play" name="Remains in Play Tracking">
+        <cmmn:entryCriterion sentryRef="sentry-remains-in-play-spell"/>
+        <cmmn:planItem id="item-track-duration" definitionRef="task-track-spell-duration"/>
+        <cmmn:exitCriterion sentryRef="sentry-spell-ends"/>
+      </cmmn:stage>
+      
+      <!-- Sentries -->
+      <cmmn:sentry id="sentry-spell-selected">
+        <cmmn:planItemOnPart sourceRef="item-validate-target">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-cast-result">
+        <cmmn:planItemOnPart sourceRef="item-make-casting-roll">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-successful-cast">
+        <cmmn:ifPart>
+          <cmmn:condition>castingResult &gt;= castingValue AND !miscast</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-dispel-complete">
+        <cmmn:ifPart>
+          <cmmn:condition>dispelAttemptMade OR perfectInvocation</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-spell-not-dispelled">
+        <cmmn:ifPart>
+          <cmmn:condition>!dispelled</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-effect-resolved">
+        <cmmn:planItemOnPart sourceRef="item-resolve-effect">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:planItemOnPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-remains-in-play-spell">
+        <cmmn:ifPart>
+          <cmmn:condition>spellDuration == "RemainsInPlay"</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <cmmn:sentry id="sentry-spell-ends">
+        <cmmn:ifPart>
+          <cmmn:condition>casterSlain OR casterChoosesEnd OR casterLeavesField OR dispelled</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+      
+      <!-- Event Listeners -->
+      <cmmn:eventListener id="event-miscast" name="Miscast Event">
+        <cmmn:standardEvent>occur</cmmn:standardEvent>
+      </cmmn:eventListener>
+      
+      <cmmn:eventListener id="event-perfect-invocation" name="Perfect Invocation Event">
+        <cmmn:standardEvent>occur</cmmn:standardEvent>
+      </cmmn:eventListener>
+      
+      <cmmn:eventListener id="event-dispel-attempt" name="Dispel Attempted">
+        <cmmn:standardEvent>occur</cmmn:standardEvent>
+      </cmmn:eventListener>
+      
+      <!-- Milestones -->
+      <cmmn:milestone id="milestone-spell-cast" name="Spell Successfully Cast">
+        <cmmn:entryCriterion sentryRef="sentry-successful-cast"/>
+      </cmmn:milestone>
+      
+      <cmmn:milestone id="milestone-effect-active" name="Effect Active">
+        <cmmn:entryCriterion sentryRef="sentry-effect-resolved"/>
+      </cmmn:milestone>
+      
+    </cmmn:casePlanModel>
+    
+    <cmmn:task id="task-select-spell" name="Select Spell to Cast"/>
+    <cmmn:task id="task-validate-target" name="Validate Target"/>
+    <cmmn:task id="task-make-casting-roll" name="Make Casting Roll"/>
+    <cmmn:task id="task-check-miscast" name="Check for Miscast"/>
+    <cmmn:task id="task-wizardly-dispel" name="Attempt Wizardly Dispel"/>
+    <cmmn:task id="task-fated-dispel" name="Attempt Fated Dispel"/>
+    <cmmn:task id="task-resolve-spell-effect" name="Resolve Spell Effect"/>
+    <cmmn:task id="task-track-spell-duration" name="Track Spell Duration"/>
+    
+  </cmmn:case>
+
+</cmmn:definitions>
+
+<!-- ================================================================
+     SECTION 5: AI AGENT INTERFACE SPECIFICATION
+     ================================================================ -->
+
+<aiAgentInterface>
+  
+  <!-- QUERY INTERFACE -->
+  <queryInterface>
+    
+    <!-- Charge Queries -->
+    <operation name="canDeclareCharge">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="targetId" type="string"/>
+      </input>
+      <output>
+        <parameter name="canCharge" type="boolean"/>
+        <parameter name="reasons" type="array">
+          <description>Array of strings explaining why charge cannot be declared if canCharge is false</description>
+        </parameter>
+      </output>
+      <logic>
+        1. Check unit is not fleeing, not rallied this turn, not in Marching Column
+        2. Check at least one model has LoS to target
+        3. Check target lies at least partially in unit's front arc
+        4. Check target is within maximum possible charge range
+        5. Check no impassable obstacles make charge impossible
+      </logic>
+    </operation>
+    
+    <operation name="validChargeTargets">
+      <input>
+        <parameter name="unitId" type="string"/>
+      </input>
+      <output>
+        <parameter name="targets" type="array">
+          <item>
+            <property name="targetId" type="string"/>
+            <property name="arc" type="enum" values="['front', 'flank', 'rear']"/>
+            <property name="distance" type="number"/>
+            <property name="lineOfSight" type="boolean"/>
+            <property name="maxPossibleRange" type="number"/>
+            <property name="withinRange" type="boolean"/>
+          </item>
+        </parameter>
+      </output>
+      <logic>
+        For each enemy unit on battlefield:
+        1. Check if target visible to at least one model
+        2. Determine which arc target lies in
+        3. Calculate distance and max possible charge range
+        4. Return only targets that meet all criteria
+      </logic>
+    </operation>
+    
+    <operation name="calculateChargeRange">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="targetId" type="string"/>
+      </input>
+      <output>
+        <parameter name="minRange" type="number">
+          <description>2 + Movement (minimum roll with modifiers)</description>
+        </parameter>
+        <parameter name="maxRange" type="number">
+          <description>6 + Movement + bonuses (maximum roll with modifiers)</description>
+        </parameter>
+        <parameter name="modifiers" type="object">
+          <property name="swiftstride" type="number"/>
+          <property name="terrain" type="number"/>
+          <property name="other" type="array"/>
+        </parameter>
+      </output>
+      <logic>
+        1. Get base Movement characteristic
+        2. Check for Swiftstride (+3 to max, +D6 possible)
+        3. Check if charging through terrain (-1 to M, discard highest die)
+        4. Calculate min (2 + M + modifiers) and max (6 + M + modifiers + Swiftstride)
+      </logic>
+    </operation>
+    
+    <operation name="legalManeuvers">
+      <input>
+        <parameter name="unitId" type="string"/>
+      </input>
+      <output>
+        <parameter name="maneuvers" type="array">
+          <item>
+            <property name="type" type="enum" values="['wheel', 'turn', 'moveBackwards', 'moveSideways', 'redressRanks', 'reform']"/>
+            <property name="movementCost" type="number"/>
+            <property name="restrictions" type="array"/>
+          </item>
+        </parameter>
+      </output>
+      <logic>
+        Based on unit status (marching, charging, formation type):
+        - Wheel: Always available (cost = distance of outside model)
+        - Turn: Cost = M/4 per 90°
+        - Move Backwards: Cost = M/2
+        - Move Sideways: Cost = M/2
+        - Redress Ranks: Cost = M/2
+        - Reform: Cost = entire M, cannot charge
+      </logic>
+    </operation>
+    
+    <operation name="shooteableTargets">
+      <input>
+        <parameter name="unitId" type="string"/>
+      </input>
+      <output>
+        <parameter name="targets" type="array">
+          <item>
+            <property name="targetId" type="string"/>
+            <property name="modelsWithLoS" type="integer"/>
+            <property name="modelsInRange" type="integer"/>
+            <property name="cover" type="enum" values="['none', 'partial', 'full']"/>
+            <property name="toHitModifier" type="integer"/>
+          </item>
+        </parameter>
+      </output>
+      <logic>
+        For each enemy unit:
+        1. Check LoS from each shooting model
+        2. Check range for each shooting model
+        3. Determine cover level
+        4. Calculate total To Hit modifiers
+      </logic>
+    </operation>
+    
+    <operation name="requiredTestsThisPhase">
+      <input>
+        <parameter name="unitId" type="string"/>
+      </input>
+      <output>
+        <parameter name="tests" type="array">
+          <item>
+            <property name="testType" type="enum" values="['Fear', 'Terror', 'Panic', 'Stupidity', 'Rally', 'Break', 'Leadership']"/>
+            <property name="reason" type="string"/>
+            <property name="modifiers" type="array">
+              <modifier>
+                <property name="source" type="string"/>
+                <property name="value" type="integer"/>
+              </modifier>
+            </property>
+            <property name="targetNumber" type="integer"/>
+          </item>
+        </parameter>
+      </output>
+      <logic>
+        Check current phase and unit status for:
+        - Fear/Terror when charging or being charged
+        - Panic from casualties or nearby units breaking
+        - Stupidity at Start of Turn
+        - Rally during Rally sub-phase
+        - Break after losing combat
+      </logic>
+    </operation>
+    
+    <operation name="availableSpells">
+      <input>
+        <parameter name="wizardId" type="string"/>
+        <parameter name="phase" type="enum" values="['Strategy', 'Movement', 'Shooting', 'Combat']"/>
+      </input>
+      <output>
+        <parameter name="spells" type="array">
+          <item>
+            <property name="spellId" type="string"/>
+            <property name="spellName" type="string"/>
+            <property name="category" type="string"/>
+            <property name="castingValue" type="object"/>
+            <property name="validTargets" type="array"/>
+            <property name="canCast" type="boolean"/>
+            <property name="restrictions" type="array"/>
+          </item>
+        </parameter>
+      </output>
+      <logic>
+        For each known spell:
+        1. Check if spell category matches current phase
+        2. Check wizard not fleeing, not wearing armour (unless exempt)
+        3. For Assailment: check wizard engaged in combat
+        4. Check spell not already cast this turn
+        5. Get valid targets based on spell requirements
+      </logic>
+    </operation>
+    
+    <operation name="combatResultModifiers">
+      <input>
+        <parameter name="combatId" type="string"/>
+      </input>
+      <output>
+        <parameter name="side1" type="object">
+          <property name="unsavedWounds" type="integer"/>
+          <property name="rankBonus" type="integer"/>
+          <property name="standard" type="integer"/>
+          <property name="battleStandard" type="integer"/>
+          <property name="flankAttack" type="integer"/>
+          <property name="rearAttack" type="integer"/>
+          <property name="highGround" type="integer"/>
+          <property name="overkill" type="integer"/>
+          <property name="otherBonuses" type="array"/>
+          <property name="total" type="integer"/>
+        </parameter>
+        <parameter name="side2" type="object">
+          <!-- Same structure as side1 -->
+        </parameter>
+      </output>
+      <logic>
+        Calculate all combat result bonuses per side:
+        1. Count unsaved wounds inflicted
+        2. Calculate rank bonus (if eligible)
+        3. Check for standards
+        4. Check for flank/rear attacks
+        5. Check high ground
+        6. Calculate overkill from challenges
+        7. Add other bonuses (Close Order, special rules, etc.)
+      </logic>
+    </operation>
+    
+    <operation name="applicableSpecialRules">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="context" type="object">
+          <property name="phase" type="string"/>
+          <property name="action" type="string"/>
+          <property name="target" type="string"/>
+        </parameter>
+      </input>
+      <output>
+        <parameter name="specialRules" type="array">
+          <item>
+            <property name="ruleName" type="string"/>
+            <property name="effect" type="string"/>
+            <property name="trigger" type="string"/>
+            <property name="active" type="boolean"/>
+          </item>
+        </parameter>
+      </output>
+      <logic>
+        For each special rule on unit/models:
+        1. Check if rule applies in current context
+        2. Check if trigger conditions are met
+        3. Return only active rules with their effects
+      </logic>
+    </operation>
+    
+  </queryInterface>
+  
+  <!-- ACTION EXECUTION INTERFACE -->
+  <actionInterface>
+    
+    <operation name="executeMove">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="destination" type="object">
+          <property name="x" type="number"/>
+          <property name="y" type="number"/>
+        </parameter>
+        <parameter name="facing" type="number"/>
+        <parameter name="maneuvers" type="array">
+          <item>
+            <property name="type" type="string"/>
+            <property name="parameters" type="object"/>
+          </item>
+        </parameter>
+      </input>
+      <output>
+        <parameter name="success" type="boolean"/>
+        <parameter name="updatedState" type="object" ref="Unit"/>
+        <parameter name="errors" type="array"/>
+      </output>
+      <validation>
+        1. Check movement doesn't exceed allowed distance
+        2. Validate maneuvers are legal
+        3. Check doesn't end within 1" of enemy (unless charging)
+        4. Check doesn't move through impassable terrain
+        5. Update hasMoved, position, facing flags
+      </validation>
+    </operation>
+    
+    <operation name="declareCharge">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="targetId" type="string"/>
+      </input>
+      <output>
+        <parameter name="success" type="boolean"/>
+        <parameter name="chargeId" type="string"/>
+        <parameter name="arcCharged" type="enum" values="['front', 'flank', 'rear']"/>
+      </output>
+      <sideEffects>
+        - Registers charge declaration
+        - Triggers charge reaction from target
+        - Sets unit.hasCharged = true
+      </sideEffects>
+    </operation>
+    
+    <operation name="selectChargeReaction">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="reaction" type="enum" values="['Hold', 'StandAndShoot', 'Flee', 'CounterCharge', 'FireAndFlee']"/>
+      </input>
+      <output>
+        <parameter name="success" type="boolean"/>
+        <parameter name="reactionResolution" type="object">
+          <property name="movementMade" type="boolean"/>
+          <property name="shotsFired" type="boolean"/>
+          <property name="newPosition" type="object"/>
+        </parameter>
+      </output>
+      <validation>
+        - Check reaction is valid for unit type
+        - For Stand&Shoot: check armed with missiles, check distance
+        - For CounterCharge: check has special rule, check distance
+        - For Flee: always valid unless already fleeing or engaged
+      </validation>
+    </operation>
+    
+    <operation name="rollToHit">
+      <input>
+        <parameter name="attackerId" type="string"/>
+        <parameter name="defenderId" type="string"/>
+        <parameter name="weaponId" type="string"/>
+        <parameter name="numAttacks" type="integer"/>
+        <parameter name="context" type="enum" values="['shooting', 'combat']"/>
+      </input>
+      <output>
+        <parameter name="hits" type="integer"/>
+        <parameter name="rolls" type="array" elementType="integer"/>
+        <parameter name="modifiers" type="object"/>
+      </output>
+      <logic>
+        1. Get appropriate To Hit table (WS vs WS for combat, BS for shooting)
+        2. Calculate all modifiers
+        3. Roll dice
+        4. Apply modifiers
+        5. Count hits (natural 1 always fails, natural 6 in combat always hits)
+        6. Handle re-rolls if applicable
+      </logic>
+    </operation>
+    
+    <operation name="rollToWound">
+      <input>
+        <parameter name="hits" type="integer"/>
+        <parameter name="weaponStrength" type="integer"/>
+        <parameter name="targetToughness" type="integer"/>
+      </input>
+      <output>
+        <parameter name="wounds" type="integer"/>
+        <parameter name="rolls" type="array" elementType="integer"/>
+      </output>
+      <logic>
+        1. Look up target number on To Wound table
+        2. Roll D6 for each hit
+        3. Compare to target number (natural 1 always fails)
+        4. Count wounds caused
+        5. Handle special rules (Poisoned Attacks, etc.)
+      </logic>
+    </operation>
+    
+    <operation name="makeArmourSaves">
+      <input>
+        <parameter name="wounds" type="integer"/>
+        <parameter name="armourValue" type="integer"/>
+        <parameter name="ap" type="integer"/>
+      </input>
+      <output>
+        <parameter name="saved" type="integer"/>
+        <parameter name="unsaved" type="integer"/>
+        <parameter name="rolls" type="array" elementType="integer"/>
+      </output>
+      <logic>
+        1. Modify armour value by AP
+        2. Roll D6 for each wound
+        3. Compare to modified armour value (natural 1 always fails)
+        4. Count saves and unsaved wounds
+        5. Attempt Ward saves for unsaved wounds if applicable
+      </logic>
+    </operation>
+    
+    <operation name="castSpell">
+      <input>
+        <parameter name="wizardId" type="string"/>
+        <parameter name="spellId" type="string"/>
+        <parameter name="targetId" type="string"/>
+      </input>
+      <output>
+        <parameter name="castingResult" type="integer"/>
+        <parameter name="success" type="boolean"/>
+        <parameter name="miscast" type="boolean"/>
+        <parameter name="perfectInvocation" type="boolean"/>
+        <parameter name="effects" type="array"/>
+      </output>
+      <logic>
+        1. Validate spell can be cast (phase, wizard status, etc.)
+        2. Roll 2D6 for casting roll
+        3. Add (Wizard Level / 2) rounded up
+        4. Check for miscast (natural double 1) or perfect invocation (natural double 6)
+        5. Compare to casting value
+        6. If successful and not perfect invocation, allow dispel attempt
+        7. Resolve spell effects if not dispelled
+      </logic>
+    </operation>
+    
+    <operation name="attemptDispel">
+      <input>
+        <parameter name="wizardId" type="string"/>
+        <parameter name="castingResult" type="integer"/>
+        <parameter name="spellId" type="string"/>
+        <parameter name="dispelType" type="enum" values="['Wizardly', 'Fated']"/>
+      </input>
+      <output>
+        <parameter name="dispelResult" type="integer"/>
+        <parameter name="success" type="boolean"/>
+        <parameter name="unbinding" type="boolean"/>
+        <parameter name="outclassed" type="boolean"/>
+      </output>
+      <logic>
+        1. Check wizard can attempt dispel (in range, not fleeing, not engaged unless spell targets them/their unit)
+        2. Roll 2D6
+        3. If Wizardly dispel: add (Wizard Level / 2) rounded up
+        4. Check for unbinding (natural double 6) or outclassed (natural double 1 on Wizardly)
+        5. Compare to casting result
+        6. If outclassed, roll on Miscast table
+      </logic>
+    </operation>
+    
+    <operation name="resolveBreakTest">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="combatResult" type="integer"/>
+      </input>
+      <output>
+        <parameter name="outcome" type="enum" values="['GivesGround', 'FallsBack', 'Breaks']"/>
+        <parameter name="roll" type="integer"/>
+        <parameter name="modifiedRoll" type="integer"/>
+        <parameter name="leadership" type="integer"/>
+        <parameter name="nextActions" type="array"/>
+      </output>
+      <logic>
+        1. Roll 2D6
+        2. Add combat result difference to roll
+        3. Compare natural and modified rolls to Leadership
+        4. Determine outcome:
+           - Natural roll &gt; Ld: Breaks and flees
+           - Modified roll &gt; Ld: Falls Back in Good Order
+           - Modified roll ≤ Ld or natural double 1: Gives Ground
+        5. Check if winner's US &gt; 2x loser's US (Falls Back becomes Breaks)
+      </logic>
+    </operation>
+    
+  </actionInterface>
+  
+  <!-- STATE MANAGEMENT INTERFACE -->
+  <stateInterface>
+    
+    <operation name="getCurrentGameState">
+      <output>
+        <parameter name="gameState" type="object" ref="GameState"/>
+      </output>
+    </operation>
+    
+    <operation name="getUnitState">
+      <input>
+        <parameter name="unitId" type="string"/>
+      </input>
+      <output>
+        <parameter name="unit" type="object" ref="Unit"/>
+      </output>
+    </operation>
+    
+    <operation name="updateUnitPosition">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="newPosition" type="object"/>
+        <parameter name="newFacing" type="number"/>
+      </input>
+      <output>
+        <parameter name="success" type="boolean"/>
+      </output>
+    </operation>
+    
+    <operation name="applySpellEffect">
+      <input>
+        <parameter name="spellId" type="string"/>
+        <parameter name="targetId" type="string"/>
+        <parameter name="duration" type="string"/>
+      </input>
+      <output>
+        <parameter name="effectId" type="string"/>
+      </output>
+    </operation>
+    
+    <operation name="removeSpellEffect">
+      <input>
+        <parameter name="effectId" type="string"/>
+      </input>
+      <output>
+        <parameter name="success" type="boolean"/>
+      </output>
+    </operation>
+    
+    <operation name="addCasualties">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="count" type="integer"/>
+        <parameter name="source" type="string"/>
+      </input>
+      <output>
+        <parameter name="modelsRemoved" type="array"/>
+        <parameter name="panicTestRequired" type="boolean"/>
+      </output>
+    </operation>
+    
+    <operation name="setUnitStatus">
+      <input>
+        <parameter name="unitId" type="string"/>
+        <parameter name="status" type="enum" values="['Active', 'Fleeing', 'Engaged', 'Destroyed', 'Rallied']"/>
+      </input>
+      <output>
+        <parameter name="success" type="boolean"/>
+      </output>
+    </operation>
+    
+    <operation name="trackRemainsInPlaySpell">
+      <input>
+        <parameter name="spellId" type="string"/>
+        <parameter name="casterId" type="string"/>
+        <parameter name="targetId" type="string"/>
+      </input>
+      <output>
+        <parameter name="trackingId" type="string"/>
+      </output>
+    </operation>
+    
+  </stateInterface>
+  
+  <!-- VALIDATION INTERFACE -->
+  <validationInterface>
+    
+    <operation name="validateArmyList">
+      <input>
+        <parameter name="armyList" type="object"/>
+        <parameter name="points" type="integer"/>
+      </input>
+      <output>
+        <parameter name="valid" type="boolean"/>
+        <parameter name="errors" type="array">
+          <item>
+            <property name="category" type="string"/>
+            <property name="message" type="string"/>
+            <property name="severity" type="enum" values="['error', 'warning']"/>
+          </item>
+        </parameter>
+      </output>
+      <checks>
+        - Core units ≥ 25% of points
+        - Characters ≤ 50% of points
+        - Special units ≤ 50% of points
+        - Rare units ≤ 25% of points
+        - 0-1 restrictions per 1000 points
+        - Troop type requirements met
+        - Magic item restrictions
+        - Unique character limits
+      </checks>
+    </operation>
+    
+    <operation name="validateDeployment">
+      <input>
+        <parameter name="units" type="array"/>
+        <parameter name="deploymentZone" type="object"/>
+      </input>
+      <output>
+        <parameter name="valid" type="boolean"/>
+        <parameter name="errors" type="array"/>
+      </output>
+      <checks>
+        - All units completely within deployment zone
+        - Units not within 1" of each other
+        - Scouts placed correctly
+        - Vanguard moves legal
+      </checks>
+    </operation>
+    
+    <operation name="validateAction">
+      <input>
+        <parameter name="action" type="object"/>
+        <parameter name="context" type="object"/>
+      </input>
+      <output>
+        <parameter name="legal" type="boolean"/>
+        <parameter name="reasons" type="array"/>
+      </output>
+    </operation>
+    
+  </validationInterface>
+  
+  <!-- EXPLANATION INTERFACE -->
+  <explanationInterface>
+    
+    <operation name="explainRuling">
+      <input>
+        <parameter name="situation" type="object"/>
+      </input>
+      <output>
+        <parameter name="relevantRules" type="array">
+          <item>
+            <property name="ruleName" type="string"/>
+            <property name="pageReference" type="string"/>
+            <property name="text" type="string"/>
+            <property name="applicability" type="string"/>
+          </item>
+        </parameter>
+      </output>
+    </operation>
+    
+    <operation name="explainModifier">
+      <input>
+        <parameter name="modifier" type="object"/>
+        <parameter name="context" type="object"/>
+      </input>
+      <output>
+        <parameter name="source" type="string"/>
+        <parameter name="calculation" type="string"/>
+        <parameter name="references" type="array"/>
+      </output>
+    </operation>
+    
+    <operation name="explainTestOutcome">
+      <input>
+        <parameter name="testType" type="string"/>
+        <parameter name="roll" type="integer"/>
+        <parameter name="modifiers" type="array"/>
+        <parameter name="result" type="string"/>
+      </input>
+      <output>
+        <parameter name="breakdown" type="object">
+          <property name="baseRoll" type="integer"/>
+          <property name="modifiersApplied" type="array"/>
+          <property name="finalValue" type="integer"/>
+          <property name="targetNumber" type="integer"/>
+          <property name="outcome" type="string"/>
+          <property name="explanation" type="string"/>
+        </parameter>
+      </output>
+    </operation>
+    
+  </explanationInterface>
+  
+</aiAgentInterface>
+
+<!-- ================================================================
+     SECTION 6: EXAMPLE COMPLETE SCENARIO
+     ================================================================ -->
+
+<exampleScenario name="Empire Spearmen Charge Orc Boyz">
+  
+  <setup>
+    <unit id="unit-spearmen">
+      <name>Empire Spearmen</name>
+      <models>20</models>
+      <formation>CloseOrder, CombatOrder</formation>
+      <ranks>4</ranks>
+      <files>5</files>
+      <position x="10" y="10"/>
+      <facing>0</facing>
+      <movement>4</movement>
+      <equipment>ThrusingSpear, LightArmour, Shield</equipment>
+    </unit>
+    
+    <unit id="unit-orcs">
+      <name>Orc Boyz</name>
+      <models>20</models>
+      <formation>CloseOrder, CombatOrder</formation>
+      <ranks>4</ranks>
+      <files>5</files>
+      <position x="10" y="22"/>
+      <facing>180</facing>
+      <movement>4</movement>
+      <equipment>HandWeapon, LightArmour</equipment>
+    </unit>
+  </setup>
+  
+  <process>
+    
+    <!-- Step 1: Declare Charge -->
+    <step id="1" name="Declare Charge" phase="Movement" subphase="DeclareCharges">
+      <action>
+        <call>canDeclareCharge</call>
+        <params>
+          <unitId>unit-spearmen</unitId>
+          <targetId>unit-orcs</targetId>
+        </params>
+        <result>
+          <canCharge>true</canCharge>
+          <reasons>[]</reasons>
+        </result>
+      </action>
+      
+      <action>
+        <call>declareCharge</call>
+        <params>
+          <unitId>unit-spearmen</unitId>
+          <targetId>unit-orcs</targetId>
+        </params>
+        <result>
+          <success>true</success>
+          <chargeId>charge-001</chargeId>
+          <arcCharged>front</arcCharged>
+        </result>
+      </action>
+    </step>
+    
+    <!-- Step 2: Charge Reaction -->
+    <step id="2" name="Charge Reaction" phase="Movement" subphase="DeclareCharges">
+      <action>
+        <call>selectChargeReaction</call>
+        <params>
+          <unitId>unit-orcs</unitId>
+          <reaction>Hold</reaction>
+        </params>
+        <result>
+          <success>true</success>
+          <reactionResolution>
+            <movementMade>false</movementMade>
+            <shotsFired>false</shotsFired>
+          </reactionResolution>
+        </result>
+      </action>
+    </step>
+    
+    <!-- Step 3: Charge Roll -->
+    <step id="3" name="Charge Roll" phase="Movement" subphase="ChargeMoves">
+      <diceRoll type="charge">
+        <dice>2D6</dice>
+        <results>[3, 5]</results>
+        <discardLowest>true</discardLowest>
+        <finalResult>5</finalResult>
+      </diceRoll>
+      
+      <calculation>
+        <baseMovement>4</baseMovement>
+        <chargeRoll>5</chargeRoll>
+        <modifiers>
+          <swiftstride>0</swiftstride>
+          <terrain>0</terrain>
+        </modifiers>
+        <totalChargeRange>9</totalChargeRange>
+      </calculation>
+      
+      <distanceToTarget>12</distanceToTarget>
+      <chargeSucceeds>false</chargeSucceeds>
+      <chargeType>failed</chargeType>
+    </step>
+    
+    <!-- Step 4: Failed Charge Movement -->
+    <step id="4" name="Failed Charge Movement" phase="Movement" subphase="ChargeMoves">
+      <action>
+        <call>executeMove</call>
+        <params>
+          <unitId>unit-spearmen</unitId>
+          <destination>
+            <x>10</x>
+            <y>15</y>
+          </destination>
+          <facing>0</facing>
+          <maneuvers>[]</maneuvers>
+        </params>
+        <result>
+          <success>true</success>
+          <updatedState>
+            <position x="10" y="15"/>
+            <hasMoved>true</hasMoved>
+            <hasCharged>false</hasCharged>
+          </updatedState>
+        </result>
+      </action>
+    </step>
+    
+  </process>
+  
+</exampleScenario>
+
+<!-- ================================================================
+     SECTION 7: TESTING AND VALIDATION FRAMEWORK
+     ================================================================ -->
+
+<testingFramework>
+  
+  <testSuite name="Combat Resolution Tests">
+    
+    <test id="combat-test-001" name="Basic To Hit - WS 3 vs WS 3">
+      <setup>
+        <attacker WS="3"/>
+        <defender WS="3"/>
+      </setup>
+      <expected>
+        <targetNumber>4+</targetNumber>
+      </expected>
+      <dmn>decision-to-hit-combat</dmn>
+    </test>
+    
+    <test id="combat-test-002" name="To Wound - S4 vs T4">
+      <setup>
+        <weaponStrength>4</weaponStrength>
+        <targetToughness>4</targetToughness>
+      </setup>
+      <expected>
+        <targetNumber>4+</targetNumber>
+      </expected>
+      <dmn>decision-to-wound</dmn>
+    </test>
+    
+    <test id="combat-test-003" name="Charging Infantry Initiative Bonus">
+      <setup>
+        <unit>
+          <baseInitiative>3</baseInitiative>
+          <charged>true</charged>
+          <distanceMoved>6</distanceMoved>
+          <arcCharged>front</arcCharged>
+        </unit>
+      </setup>
+      <expected>
+        <modifiedInitiative>6</modifiedInitiative>
+        <explanation>I3 + 3 (moved 6", max +3 for front charge)</explanation>
+      </expected>
+    </test>
